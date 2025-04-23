@@ -45,9 +45,9 @@ def check_tokens():
         'TELEGRAM_CHAT_ID': TELEGRAM_CHAT_ID
     }
     result = []
-    for i in env_dict:
-        if env_dict[i] is None:
-            result.append(i)
+    for variable in env_dict:
+        if env_dict[variable] is None or env_dict[variable] == '':
+            result.append(variable)
     return result
 
 
@@ -78,8 +78,7 @@ def get_api_answer(timestamp):
                 f'headers {homework_statuses.headers}'
             )
         else:
-            homework_statuses = homework_statuses.json()
-            return homework_statuses
+            return homework_statuses.json()
     except requests.RequestException as error:
         raise ConnectionError(
             'Произошла ошибка при запросе %s', error
@@ -108,30 +107,28 @@ def parse_status(homework):
     if homework_name and homework_status and verdict:
         return f'Изменился статус проверки работы "{homework_name}". {verdict}'
     elif not homework_name:
-        logger.error('Произошла ошибка, нету ключа "homework_name"')
         raise MissingValueException('Ошибка, нету ключа "homework_name"')
     elif not homework_status:
-        logger.error('Произошла ошибка, нету ключа "status"')
         raise MissingValueException('Ошибка, нету ключа "status"')
     elif not verdict:
-        logger.error('Произошла ошибка с ключом "status"')
         raise MissingValueException('Ошибка с ключом "status"')
 
 
 def main():
     """Основная логика работы бота."""
+    if check_tokens():
+        logger.critical(
+            'Отсутствует обязательная переменная окружения'
+        )
+        raise MissingValueException(
+            'Нет значения переменной'
+        )
     bot = TeleBot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())
     payload = {'from_date': timestamp}
     last_error = None
     status_hw_now = None
     status_hw_last = None
-
-    if check_tokens():
-        logger.critical(
-            'Отсутствует обязательная переменная окружения'
-        )
-        sys.exit(1)
 
     while True:
         try:
